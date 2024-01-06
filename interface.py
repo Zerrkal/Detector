@@ -2,16 +2,42 @@ import tkinter as tk
 from tkinter import ttk, Menu, filedialog
 import os
 import cv2
+import threading
+from detector import ObjectDetection
+
+global detector
+
 
 def start_detection():
     print("Start")
-    # Код для запуску детекції об'єктів
-    pass
+    chosen_option = source_var.get()
+    if chosen_option == "Choose image":
+        camera_frame.place_forget()
+        file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg *.jpeg *.png")])
+        if file_path:
+            file_name = os.path.basename(file_path)
+            file_path_label.config(text=file_name)
+    elif chosen_option == "Choose video":
+        camera_frame.place_forget()
+        file_path = filedialog.askopenfilename(filetypes=[("Video files", "*.mp4 *.avi")])
+        if file_path:
+            file_name = os.path.basename(file_path)
+            file_path_label.config(text=file_name)
+    elif chosen_option == "Web camera":
+        # Код для запуску детекції об'єктів
+        video_thread = threading.Thread(target=start_video_processing)
+        video_thread.start()
+    else:
+        file_path_label.config(text="No source selected", fg="red")
+    
+    #pass
 
 def stop_detection():
     print("Stop")
     # Код для зупинки детекції об'єктів
-    pass
+    if detector:
+        detector.stop()
+    #pass
 
 def open_settings():
     # Код для відкриття налаштувань
@@ -59,6 +85,16 @@ def on_camera_select():
     selected_camera = camera_var.get()
     print("Selected camera:", selected_camera)
     # Тут можна додати код для запуску вибраної камери
+
+def start_video_processing():
+    if camera_var.get() != '':
+        global detector
+        capture_index = int(camera_var.get())  # Отримати індекс обраної камери
+        detector = ObjectDetection(capture_index)
+        detector()
+    else:
+        print("No camera selected")
+        file_path_label.config(text="No camera selected", fg="red")
 
 
 window = tk.Tk()
