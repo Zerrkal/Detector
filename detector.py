@@ -35,7 +35,7 @@ class ObjectDetection:
         self.running = True
 
         # model information
-        self.model = YOLO("D:/Repos/Yolov8Model1/runs/detect/trainm12loaded/weights/best.pt")
+        self.model = YOLO("best.pt")
         #self.model.conf = 0.5
 
         # visual information
@@ -82,6 +82,9 @@ class ObjectDetection:
         while self.running:
             self.start_time = time()
             ret, im0 = cap.read()
+            if not ret:
+                print("Can`t read frame from camera")
+                break
             assert ret
             results = self.predict(im0)
             im0, class_ids = self.plot_bboxes(results, im0)

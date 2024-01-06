@@ -31,16 +31,15 @@ def start_detection():
         # video_thread.start()
     else:
         file_path_label.config(text="No source selected", fg="red")
-    
-    #pass
+
 
 def stop_detection():
     print("Stop")
     # Код для зупинки детекції об'єктів
     if detector:
         detector.stop()
-        video_label.config(image='')  # очищення віджету Label
-    #pass
+        window.after(100, lambda: video_label.config(image=''))  # очищення віджету Label
+
 
 def open_settings():
     # Код для відкриття налаштувань
@@ -66,7 +65,6 @@ def on_source_select(event):
         print("Web camera selected")
         file_path_label.config(text="")
         camera_frame.place(x=320, y=510, width=220, height=80)
-    
 
 
 def detect_cameras():
@@ -164,6 +162,7 @@ file_path_label = tk.Label(source_frame, text="", fg="blue")
 file_path_label.place(x=0, y=40)
 
 available_cameras = detect_cameras()
+# camera_labels = [f"Camera {cam}" for cam in available_cameras]
 
 camera_frame = ttk.Frame(window)
 #camera_frame.place(x=320, y=510, width=220, height=80)
@@ -173,6 +172,7 @@ camera_label.place(x=10, y=0)
 
 camera_var = tk.StringVar()
 camera_combobox = ttk.Combobox(camera_frame, textvariable=camera_var, values=available_cameras, state='readonly',width = 12)
+
 camera_combobox.grid(column=0, row=0)
 camera_combobox.place(x=100, y=0)
 
