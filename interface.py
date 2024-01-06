@@ -4,6 +4,7 @@ import os
 import cv2
 import threading
 from detector import ObjectDetection
+from PIL import Image, ImageTk
 
 global detector
 
@@ -25,8 +26,9 @@ def start_detection():
             file_path_label.config(text=file_name)
     elif chosen_option == "Web camera":
         # Код для запуску детекції об'єктів
-        video_thread = threading.Thread(target=start_video_processing)
-        video_thread.start()
+        start_video_processing()
+        # video_thread = threading.Thread(target=start_video_processing)
+        # video_thread.start()
     else:
         file_path_label.config(text="No source selected", fg="red")
     
@@ -37,6 +39,7 @@ def stop_detection():
     # Код для зупинки детекції об'єктів
     if detector:
         detector.stop()
+        video_label.config(image='')  # очищення віджету Label
     #pass
 
 def open_settings():
@@ -91,10 +94,18 @@ def start_video_processing():
         global detector
         capture_index = int(camera_var.get())  # Отримати індекс обраної камери
         detector = ObjectDetection(capture_index)
-        detector()
+        video_thread = threading.Thread(target=detector, args=(update_frame,))
+        video_thread.start()
     else:
         print("No camera selected")
         file_path_label.config(text="No camera selected", fg="red")
+
+def update_frame(frame):
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    frame = Image.fromarray(frame)
+    frame = ImageTk.PhotoImage(frame)
+    video_label.config(image=frame)
+    video_label.image = frame  # збереження посилання на зображення
 
 
 window = tk.Tk()
@@ -103,7 +114,7 @@ window.geometry("800x600")
 
 # Місце для відео або фото
 video_frame = tk.Frame(window, bg='black', bd=2, relief="sunken")
-video_frame.place(x=50, y=50, width=700, height=450)
+video_frame.place(x=50, y=50, width=640, height=450)
 
 video_label = tk.Label(video_frame, text="VIDEO", bg='gray', fg='white')
 video_label.pack(expand=True, fill='both')
@@ -148,25 +159,11 @@ source_combobox['values'] = ('Choose image', 'Choose video', 'Web camera')
 source_combobox.bind('<<ComboboxSelected>>', on_source_select)
 source_combobox.place(x=50, y=0)
 
-# Встановлення пункту за замовчуванням
-# source_var.set('Choose File')
-
 # Мітка для відображення шляху вибраного файлу
 file_path_label = tk.Label(source_frame, text="", fg="blue")
 file_path_label.place(x=0, y=40)
 
 available_cameras = detect_cameras()
-
-# # Створення GUI
-# window = tk.Tk()
-# window.title("Camera Selector")
-# window.geometry("300x100")
-
-# camera_var = tk.StringVar()
-# camera_combobox = ttk.Combobox(window, textvariable=camera_var, values=available_cameras, state='readonly')
-# camera_combobox.grid(column=0, row=0)
-# select_button = ttk.Button(window, text="Select Camera", command=on_camera_select)
-# select_button.grid(column=0, row=1)
 
 camera_frame = ttk.Frame(window)
 #camera_frame.place(x=320, y=510, width=220, height=80)
@@ -177,8 +174,6 @@ camera_label.place(x=10, y=0)
 camera_var = tk.StringVar()
 camera_combobox = ttk.Combobox(camera_frame, textvariable=camera_var, values=available_cameras, state='readonly',width = 12)
 camera_combobox.grid(column=0, row=0)
-#camera_combobox['values'] = ('Choose image', 'Choose video', 'Web camera')
-#camera_combobox.bind('<<ComboboxSelected>>', on_camera_select)
 camera_combobox.place(x=100, y=0)
 
 window.mainloop()

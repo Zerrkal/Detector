@@ -73,11 +73,11 @@ class ObjectDetection:
             self.annotator.box_label(box, label=label, color=colors(int(cls), True))
         return im0, class_ids
 
-    def __call__(self):
+    def __call__(self, frame_update_callback):
         cap = cv2.VideoCapture(self.capture_index)
         assert cap.isOpened()
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         frame_count = 0
         while self.running:
             self.start_time = time()
@@ -95,13 +95,15 @@ class ObjectDetection:
                 self.email_sent = False
 
             self.display_fps(im0)
-            cv2.imshow('YOLOv8 Detection', im0)
+            # cv2.imshow('YOLOv8 Detection', im0)
+            im0, class_ids = self.plot_bboxes(results, im0)
+            frame_update_callback(im0)  # Оновлення кадру в GUI
             frame_count += 1
             if cv2.waitKey(5) & 0xFF == 27:
                 break
         cap.release()
         cv2.destroyAllWindows()
-        #server.quit()
+
 
     def stop(self):
         self.running = False
