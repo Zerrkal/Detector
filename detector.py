@@ -4,28 +4,6 @@ import cv2
 from time import time
 from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator, colors
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-
-# password = ""
-# from_email = ""  # must match the email used to generate the password
-# to_email = ""  # receiver email
-
-# server = smtplib.SMTP('smtp.gmail.com: 587')
-# server.starttls()
-# server.login(from_email, password)
-
-# def send_email(to_email, from_email, object_detected=1):
-#     message = MIMEMultipart()
-#     message['From'] = from_email
-#     message['To'] = to_email
-#     message['Subject'] = "Security Alert"
-#     # Add in the message body
-#     message_body = f'ALERT - {object_detected} objects has been detected!!'
-
-#     message.attach(MIMEText(message_body, 'plain'))
-#     server.sendmail(from_email, to_email, message.as_string())
 
 class ObjectDetection:
     def __init__(self, capture_index):
@@ -76,8 +54,6 @@ class ObjectDetection:
     def __call__(self, frame_update_callback):
         cap = cv2.VideoCapture(self.capture_index)
         assert cap.isOpened()
-        # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         frame_count = 0
         while self.running:
             self.start_time = time()
@@ -98,18 +74,62 @@ class ObjectDetection:
                 self.email_sent = False
 
             self.display_fps(im0)
-            # cv2.imshow('YOLOv8 Detection', im0)
             im0, class_ids = self.plot_bboxes(results, im0)
             frame_update_callback(im0)  # Оновлення кадру в GUI
             frame_count += 1
             if cv2.waitKey(5) & 0xFF == 27:
                 break
         cap.release()
-        cv2.destroyAllWindows()
+        # cv2.destroyAllWindows()
+
+    
+    def process_image(self, image_path, width=None, height=None):
+        im0 = cv2.imread(image_path)
+        results = self.predict(im0)
+        im0, _ = self.plot_bboxes(results, im0)
+        im0 = self.resize_and_pad(im0, width, height)
+        return im0
+    
+    def process_video(self, video_path, frame_update_callback, width=None, height=None):
+        cap = cv2.VideoCapture(video_path)
+        assert cap.isOpened()
+        while self.running:
+            ret, im0 = cap.read()
+            if not ret:
+                break
+            results = self.predict(im0)
+            im0 = self.resize_and_pad(im0, width, height)
+            frame_update_callback(im0)
+            if cv2.waitKey(1) == ord('q'):
+                break
+        cap.release()
+    
+    def resize_and_pad(self, im0, new_width=None, new_height=None):
+        """Змінює розмір зображення та додає рамку для збереження відношення сторін"""
+        (h, w) = im0.shape[:2]
+
+        # Обчислення коефіцієнтів масштабування
+        scale_w = new_width / w if new_width is not None else 1
+        scale_h = new_height / h if new_height is not None else 1
+
+        # Вибір найменшого коефіцієнта для збереження відношення сторін
+        scale = min(scale_w, scale_h)
+
+        # Зміна розміру зображення
+        new_size = (int(w * scale), int(h * scale))
+        resized = cv2.resize(im0, new_size, interpolation=cv2.INTER_AREA)
+
+        # Додавання рамки, якщо потрібно
+        if new_width is not None and new_height is not None:
+            top = (new_height - new_size[1]) // 2
+            bottom = new_height - new_size[1] - top
+            left = (new_width - new_size[0]) // 2
+            right = new_width - new_size[0] - left
+            padded = cv2.copyMakeBorder(resized, top, bottom, left, right, cv2.BORDER_CONSTANT, value=[0, 0, 0])
+            return padded
+
+        return resized
 
 
     def stop(self):
         self.running = False
-
-# detector = ObjectDetection(capture_index=0)
-# detector()
