@@ -14,7 +14,7 @@ class ObjectDetection:
 
         # model information
         self.model = YOLO("best.pt")
-        #self.model.conf = 0.5
+        self.conf = 0.5
 
         # visual information
         self.annotator = None
@@ -26,7 +26,7 @@ class ObjectDetection:
 
     def predict(self, im0):
         
-        results = self.model(im0, conf = 0.25)
+        results = self.model(im0, conf = self.conf)
         return results
 
     def display_fps(self, im0):

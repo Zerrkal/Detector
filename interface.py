@@ -6,10 +6,8 @@ import threading
 from PIL import Image, ImageTk
 from time import time
 import io
-import pyperclip
 
 from detector import ObjectDetection
-from alert_email import AlertNotificationEmail 
 from alert_telegram import AlertNotificationTelegram
 
 
@@ -233,7 +231,7 @@ class ObjectDetectorApp:
             current_time = time()
             if current_time - self.alert_time >= self.alert_update_time:
                 self.alert_time = current_time
-                message = f"Alert {class_ids} found"
+                message = f"Alert {class_ids} drone found"
                 print(message)
                 self.send_image_tread = threading.Thread(target=self.send_image_tgbot, args = (frame, message))
                 self.send_image_tread.start()
