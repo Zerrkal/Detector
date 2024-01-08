@@ -26,7 +26,7 @@ class AlertNotificationTelegram:
 
     def enable_notifications(self, update: Update, context: CallbackContext):
         self.notifications_enabled = True
-        update.message.reply_text(f"Сповіщення включено. Ваш chat_id: {self.chat_id}")
+        update.message.reply_text(f"Сповіщення включено.")
 
     def disable_notifications(self, update: Update, context: CallbackContext):
         self.notifications_enabled = False
