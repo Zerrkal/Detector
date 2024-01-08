@@ -3,11 +3,15 @@ from tkinter import ttk, Menu, filedialog
 import os
 import cv2
 import threading
-from detector import ObjectDetection
 from PIL import Image, ImageTk
+from time import time
+import io
+import pyperclip
 
-# VIDEO_FRAME_WIDTH = 640
-# VIDEO_FRAME_HIGHT = 448
+from detector import ObjectDetection
+from alert_email import AlertNotificationEmail 
+from alert_telegram import AlertNotificationTelegram
+
 
 class ObjectDetectorApp:
     def __init__(self, window_title="Object Detector", width=800, height=600):
@@ -18,6 +22,12 @@ class ObjectDetectorApp:
         self.detector = None
         self.selected_file_path = None
         self.setup_ui()
+
+        
+        self.alert_time = 0
+        self.alert_update_time = 5
+        # self.alert_email_notif = None
+        self.alert_email_notif_bot = AlertNotificationTelegram()
 
     def setup_ui(self):
         self.VIDEO_FRAME_WIDTH = 640
@@ -84,6 +94,11 @@ class ObjectDetectorApp:
         self.camera_combobox.grid(column=0, row=0)
         self.camera_combobox.place(x=100, y=0)
 
+        # self.canvas = tk.Canvas(self.window, width=50, height=50)
+        # self.canvas.place(x=550, y=510)
+        # # Координати для трикутника (x1, y1, x2, y2, x3, y3)
+        # self.triangle = self.canvas.create_polygon(10, 40, 25, 10, 40, 40, fill='red', state='hidden')  # Спочатку ховаємо трикутник
+
     def start_detection(self):
         print("Start")
         self.video_label.config(image='')
@@ -100,6 +115,7 @@ class ObjectDetectorApp:
         elif chosen_option == "Choose video":
             self.camera_frame.place_forget()
             if self.selected_file_path != None and self.selected_file_path.endswith((".mp4", ".avi")):
+                self.stop_detection()
                 self.detector = ObjectDetection(None)
                 video_processing_thread = threading.Thread(target=self.detector.process_video, 
                                                            args=(self.selected_file_path, self.update_frame, 
@@ -108,6 +124,8 @@ class ObjectDetectorApp:
             else:
                 self.file_path_label.config(text="No .mp4 .avi file selected", fg="red")
         elif chosen_option == "Web camera":
+            self.file_path_label.config(text="")
+            self.stop_detection()
             self.start_video_processing()
         else:
             self.file_path_label.config(text="No source selected", fg="red")
@@ -115,7 +133,7 @@ class ObjectDetectorApp:
 
     def stop_detection(self):
         print("Stop")
-        self.window.after(100, lambda: self.video_label.config(image=''))  # очищення віджету Label
+        self.window.after(50, lambda: self.video_label.config(image=''))  # очищення віджету Label
         # Код для зупинки детекції об'єктів
         if self.detector:
             self.detector.stop()
@@ -180,8 +198,10 @@ class ObjectDetectorApp:
             self.detector
             capture_index = int(self.camera_var.get())  # Отримати індекс обраної камери
             self.detector = ObjectDetection(capture_index)
-            video_thread = threading.Thread(target=self.detector, args=(self.update_frame,))
-            video_thread.start()
+            # self.alert_email_notif = AlertNotificationEmail(capture_index)
+            self.video_thread = threading.Thread(target=self.detector, args=(self.update_frame, self.get_alert))
+            self.video_thread.start()
+            
         else:
             print("No camera selected")
             self.file_path_label.config(text="No camera selected", fg="red")
@@ -193,6 +213,34 @@ class ObjectDetectorApp:
         self.video_label.config(image=frame)
         self.video_label.image = frame  # збереження посилання на зображення
     
+    def send_image_tgbot(self, frame, message):
+        if frame is not None:
+            # Перетворення Tkinter PhotoImage на PIL Image
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame_image = Image.fromarray(frame)
+            print("Send Image 2")
+            # Збереження PIL Image у буфер обміну
+            with io.BytesIO() as camera_image:
+                frame_image.save(camera_image, format="PNG")
+                camera_image.seek(0)
+                self.camera_image_bytes = camera_image.read()
+        
+        self.alert_email_notif_bot.send_image(self.camera_image_bytes, message)
+
+
+    def get_alert(self, class_ids, frame = None):
+        if class_ids is not None:
+            current_time = time()
+            if current_time - self.alert_time >= self.alert_update_time:
+                self.alert_time = current_time
+                message = f"Alert {class_ids} found"
+                print(message)
+                self.send_image_tread = threading.Thread(target=self.send_image_tgbot, args = (frame, message))
+                self.send_image_tread.start()
+        #     self.canvas.itemconfig(self.triangle, state='normal')
+        #     # self.alert_email_notif.send(class_ids)
+        # else:
+        #     self.canvas.itemconfig(self.triangle, state='hidden')
     
     def run(self):
             """Запускає головний цикл Tkinter."""

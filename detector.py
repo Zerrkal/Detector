@@ -9,7 +9,7 @@ class ObjectDetection:
     def __init__(self, capture_index):
         # default parameters
         self.capture_index = capture_index
-        self.email_sent = False
+        self.notif_sent = False
         self.running = True
 
         # model information
@@ -51,10 +51,10 @@ class ObjectDetection:
             self.annotator.box_label(box, label=label, color=colors(int(cls), True))
         return im0, class_ids
 
-    def __call__(self, frame_update_callback):
+    def __call__(self, frame_update_callback, class_ids_callback = None):
         cap = cv2.VideoCapture(self.capture_index)
         assert cap.isOpened()
-        frame_count = 0
+        # frame_count = 0
         while self.running:
             self.start_time = time()
             ret, im0 = cap.read()
@@ -66,31 +66,32 @@ class ObjectDetection:
             im0, class_ids = self.plot_bboxes(results, im0)
 
             if len(class_ids) > 0:  # Only send email If not sent before
-                if not self.email_sent:
+                if not self.notif_sent:
+                    class_ids_callback(len(class_ids), im0)
                     #send_email(to_email, from_email, len(class_ids))
                     print("send_email")
-                    self.email_sent = True
+                    self.notif_sent = True
             else:
-                self.email_sent = False
+                self.notif_sent = False
 
-            self.display_fps(im0)
-            im0, class_ids = self.plot_bboxes(results, im0)
+            # self.display_fps(im0)
+            # im0, class_ids = self.plot_bboxes(results, im0)
             frame_update_callback(im0)  # Оновлення кадру в GUI
-            frame_count += 1
-            if cv2.waitKey(5) & 0xFF == 27:
-                break
+            # frame_count += 1
+            # if cv2.waitKey(5) & 0xFF == 27:
+            #     break
         cap.release()
         # cv2.destroyAllWindows()
 
     
-    def process_image(self, image_path, width=None, height=None):
+    def process_image(self, image_path, width=640, height=640):
         im0 = cv2.imread(image_path)
         results = self.predict(im0)
         im0, _ = self.plot_bboxes(results, im0)
         im0 = self.resize_and_pad(im0, width, height)
         return im0
     
-    def process_video(self, video_path, frame_update_callback, width=None, height=None):
+    def process_video(self, video_path, frame_update_callback, width=640, height=640):
         cap = cv2.VideoCapture(video_path)
         assert cap.isOpened()
         while self.running:
@@ -98,10 +99,11 @@ class ObjectDetection:
             if not ret:
                 break
             results = self.predict(im0)
+            im0, _ = self.plot_bboxes(results, im0)
             im0 = self.resize_and_pad(im0, width, height)
             frame_update_callback(im0)
-            if cv2.waitKey(1) == ord('q'):
-                break
+            # if cv2.waitKey(1) == ord('q'):
+            #     break
         cap.release()
     
     def resize_and_pad(self, im0, new_width=None, new_height=None):
