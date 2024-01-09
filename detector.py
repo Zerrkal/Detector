@@ -6,7 +6,7 @@ from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator, colors
 
 class ObjectDetection:
-    def __init__(self, capture_index):
+    def __init__(self, capture_index, conf = 0.7):
         # default parameters
         self.capture_index = capture_index
         self.notif_sent = False
@@ -14,7 +14,7 @@ class ObjectDetection:
 
         # model information
         self.model = YOLO("best.pt")
-        self.conf = 0.5
+        self.conf = conf
 
         # visual information
         self.annotator = None

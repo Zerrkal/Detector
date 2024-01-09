@@ -2,38 +2,50 @@ import tkinter as tk
 from tkinter import ttk, Menu, filedialog
 import os
 import cv2
+import io
 import threading
 from PIL import Image, ImageTk
 from time import time
-import io
+import configparser
 
 from detector import ObjectDetection
 from alert_telegram import AlertNotificationTelegram
+from app_settings_conf import DetectionAppSetConfig
 
 
 class ObjectDetectorApp:
-    def __init__(self, window_title="Object Detector", width=800, height=600):
-        self.window = tk.Tk()
-        self.window.title(window_title)
-        self.window.geometry(f"{width}x{height}")
-
+    def __init__(self):
+        
         self.detector = None
         self.selected_file_path = None
         self.setup_ui()
-
         
         self.alert_time = 0
-        self.alert_update_time = 5
-        # self.alert_email_notif = None
-        self.alert_email_notif_bot = AlertNotificationTelegram()
+        self.detection_conf, self.alert_update_time, self.send_notif, token = DetectionAppSetConfig().get_settings()
+
+        self.alert_tg_notif_bot = AlertNotificationTelegram(token)
+
+        print(self.detection_conf, self.alert_update_time, self.send_notif, token)
+
+    
+
 
     def setup_ui(self):
-        self.VIDEO_FRAME_WIDTH = 640
-        self.VIDEO_FRAME_HIGHT = 448
+        window_title="Object Detector"
+        width=800
+        height=600
+        self.window = tk.Tk()
+        self.window.title(window_title)
+        self.window.geometry(f"{width}x{height}")
+        
+        self.window.protocol("WM_DELETE_WINDOW", self.on_window_close)
+
+        self.video_frame_width = 640
+        self.video_frame_hight = 448
 
         # Місце для відео або фото
         self.video_frame = tk.Frame(self.window, bg='black', bd=2, relief="sunken")
-        self.video_frame.place(x=50, y=50, width=self.VIDEO_FRAME_WIDTH, height=self.VIDEO_FRAME_HIGHT)
+        self.video_frame.place(x=50, y=50, width=self.video_frame_width, height=self.video_frame_hight)
 
         self.video_label = tk.Label(self.video_frame, text="VIDEO", bg='gray', fg='white')
         self.video_label.pack(expand=True, fill='both')
@@ -44,15 +56,10 @@ class ObjectDetectorApp:
 
         # Додавання першого меню налаштувань
         settings_menu = Menu(menu_bar, tearoff=0)
-        menu_bar.add_cascade(label="Settings", menu=settings_menu)
-        settings_menu.add_command(label="Setting 1", command=self.open_settings)
-        settings_menu.add_command(label="Setting 2", command=self.open_settings)
-
-        # Додавання другого меню налаштувань
-        extra_settings_menu = Menu(menu_bar, tearoff=0)
-        menu_bar.add_cascade(label="Extra", menu=extra_settings_menu)
-        extra_settings_menu.add_command(label="Extra 1", command=self.open_settings)
-        extra_settings_menu.add_command(label="Extra 2", command=self.open_settings)
+        menu_bar.add_cascade(label="Detection Settings", menu=settings_menu)
+        settings_menu.add_command(label="Telegram bot", command=DetectionAppSetConfig.tg_bot_settings_ui)
+        settings_menu.add_command(label="Telegram chat id", command=DetectionAppSetConfig.tg_bot_id_settings_ui)
+        settings_menu.add_command(label="Confidence lvl", command=DetectionAppSetConfig.confidence_settings_ui)
 
         # Кнопки Start та Stop
         buttons_frame = ttk.Frame(self.window)
@@ -89,24 +96,27 @@ class ObjectDetectorApp:
         self.camera_var = tk.StringVar()
         self.camera_combobox = ttk.Combobox(self.camera_frame, textvariable=self.camera_var, 
                                             values=self.available_cameras, state='readonly', width=12)
-        self.camera_combobox.grid(column=0, row=0)
+        # self.camera_combobox.grid(column=0, row=0)
         self.camera_combobox.place(x=100, y=0)
 
-        # self.canvas = tk.Canvas(self.window, width=50, height=50)
-        # self.canvas.place(x=550, y=510)
-        # # Координати для трикутника (x1, y1, x2, y2, x3, y3)
-        # self.triangle = self.canvas.create_polygon(10, 40, 25, 10, 40, 40, fill='red', state='hidden')  # Спочатку ховаємо трикутник
 
+    def on_window_close(self):
+        self.window.destroy()
+        self.alert_tg_notif_bot.updater.stop()
+    
+    
     def start_detection(self):
         print("Start")
+        self.detection_conf, self.alert_update_time, self.send_notif, _ = DetectionAppSetConfig().get_settings()
+        # self.alert_tg_notif_bot.set_chat_id()
         self.video_label.config(image='')
         chosen_option = self.source_var.get()
         if chosen_option == "Choose image":
             self.camera_frame.place_forget()
             if self.selected_file_path and self.selected_file_path.endswith((".jpg", ".jpeg", ".png")):
                 print("ok")
-                self.detector = ObjectDetection(None)
-                image = self.detector.process_image(self.selected_file_path, self.VIDEO_FRAME_WIDTH, self.VIDEO_FRAME_HIGHT)
+                self.detector = ObjectDetection(None, self.detection_conf)
+                image = self.detector.process_image(self.selected_file_path, self.video_frame_width, self.video_frame_hight)
                 self.update_frame(image)
             else:
                 self.file_path_label.config(text="No .jpg .jpeg .png file selected", fg="red")
@@ -114,10 +124,11 @@ class ObjectDetectorApp:
             self.camera_frame.place_forget()
             if self.selected_file_path != None and self.selected_file_path.endswith((".mp4", ".avi")):
                 self.stop_detection()
-                self.detector = ObjectDetection(None)
+                self.detector = ObjectDetection(None, self.detection_conf)
                 video_processing_thread = threading.Thread(target=self.detector.process_video, 
                                                            args=(self.selected_file_path, self.update_frame, 
-                                                                 self.VIDEO_FRAME_WIDTH, self.VIDEO_FRAME_HIGHT))
+                                                                 self.video_frame_width, self.video_frame_hight))
+                video_processing_thread.daemon = True
                 video_processing_thread.start()
             else:
                 self.file_path_label.config(text="No .mp4 .avi file selected", fg="red")
@@ -128,7 +139,6 @@ class ObjectDetectorApp:
         else:
             self.file_path_label.config(text="No source selected", fg="red")
 
-
     def stop_detection(self):
         print("Stop")
         self.window.after(50, lambda: self.video_label.config(image=''))  # очищення віджету Label
@@ -136,26 +146,16 @@ class ObjectDetectorApp:
         if self.detector:
             self.detector.stop()
 
-
-    def open_settings(self):
-        # Код для відкриття налаштувань
-        pass
-
     def on_source_select(self, event):
         # Функція, яка викликається при виборі опції в Combobox
         chosen_option = self.source_var.get()
+        file_path = None
         if chosen_option == "Choose image":
             self.camera_frame.place_forget()
             file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg *.jpeg *.png")])
-            # if selected_file_path:
-            #     file_name = os.path.basename(selected_file_path)
-            #     file_path_label.config(text=file_name)
         elif chosen_option == "Choose video":
             self.camera_frame.place_forget()
             file_path = filedialog.askopenfilename(filetypes=[("Video files", "*.mp4 *.avi")])
-            # if selected_file_path:
-            #     file_name = os.path.basename(selected_file_path)
-            #     file_path_label.config(text=file_name)
         elif chosen_option == "Web camera":
             self.camera_combobox.config(state='readonly')  # Активувати випадаючий список камер
             print("Web camera selected")
@@ -169,7 +169,6 @@ class ObjectDetectorApp:
         else:
             self.selected_file_path = None
             self.file_path_label.config(text="")
-
 
     def detect_cameras(self):
         # Спроба підключитися до камер для визначення їх кількості
@@ -193,12 +192,11 @@ class ObjectDetectorApp:
 
     def start_video_processing(self):
         if self.camera_var.get() != '':
-            self.detector
             capture_index = int(self.camera_var.get())  # Отримати індекс обраної камери
-            self.detector = ObjectDetection(capture_index)
-            # self.alert_email_notif = AlertNotificationEmail(capture_index)
-            self.video_thread = threading.Thread(target=self.detector, args=(self.update_frame, self.get_alert))
-            self.video_thread.start()
+            self.detector = ObjectDetection(capture_index, self.detection_conf)
+            video_thread = threading.Thread(target=self.detector, args=(self.update_frame, self.get_alert))
+            video_thread.daemon = True
+            video_thread.start()
             
         else:
             print("No camera selected")
@@ -223,8 +221,7 @@ class ObjectDetectorApp:
                 camera_image.seek(0)
                 self.camera_image_bytes = camera_image.read()
         
-        self.alert_email_notif_bot.send_image(self.camera_image_bytes, message)
-
+        self.alert_tg_notif_bot.send_image(self.camera_image_bytes, message)
 
     def get_alert(self, class_ids, frame = None):
         if class_ids is not None:
@@ -234,11 +231,8 @@ class ObjectDetectorApp:
                 message = f"Alert {class_ids} drone found"
                 print(message)
                 self.send_image_tread = threading.Thread(target=self.send_image_tgbot, args = (frame, message))
+                self.send_image_tread.daemon = True
                 self.send_image_tread.start()
-        #     self.canvas.itemconfig(self.triangle, state='normal')
-        #     # self.alert_email_notif.send(class_ids)
-        # else:
-        #     self.canvas.itemconfig(self.triangle, state='hidden')
     
     def run(self):
             """Запускає головний цикл Tkinter."""
