@@ -8,20 +8,20 @@ from app_settings_conf import DetectionAppSetConfig
 class AlertNotificationTelegram:
     def __init__(self, token):
         self.bot = Bot(token)
-        self.updater = Updater(token)  # Видалено use_context=True
+        self.updater = Updater(token)
         self.set_chat_id()
         self.activate_chat()
 
     def set_chat_id(self):
         self.chat_ids = {}
-        # Отримуємо ключі та значення як строки
+        # We receive keys and values as strings
         for chat_id_str, status_str in DetectionAppSetConfig.get_chat_ids().items():
-            # Перетворення ключа у int і значення у булеве
+            # Convert key to int and value to boolean
             self.chat_ids[int(chat_id_str)] = True if status_str.lower() == 'true' else False
 
     
     def write_chat_id_to_config(self, chat_id, chat_id_status):
-        # Перетворення булевого значення у строку
+        # Converting a boolean value to a string
         status_str = 'true' if chat_id_status else 'false'
         DetectionAppSetConfig.set_chat_id(chat_id, status_str)
     
@@ -56,7 +56,7 @@ class AlertNotificationTelegram:
         self.set_chat_id()
         if self.chat_ids:
             for chat_id, chat_id_status in self.chat_ids.items():
-                if chat_id_status:  # Перевірка, чи значення є True
+                if chat_id_status:  # Checks if the value is True
                     try:
                         self.bot.send_message(chat_id, message)
                     except TelegramError as e:
@@ -68,7 +68,7 @@ class AlertNotificationTelegram:
         self.set_chat_id()
         if photo is not None:
             for chat_id, chat_id_status in self.chat_ids.items():
-                if chat_id_status:  # Перевірка, чи значення є True
+                if chat_id_status:  # Checks if the value is True
                     try:
                         self.bot.send_photo(chat_id, photo=photo, caption=caption)
                     except TelegramError as e:

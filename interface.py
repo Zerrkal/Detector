@@ -108,7 +108,6 @@ class ObjectDetectorApp:
     def start_detection(self):
         print("Start")
         self.detection_conf, self.alert_update_time, self.send_notif, _ = DetectionAppSetConfig().get_settings()
-        # self.alert_tg_notif_bot.set_chat_id()
         self.video_label.config(image='')
         chosen_option = self.source_var.get()
         if chosen_option == "Choose image":
@@ -147,7 +146,7 @@ class ObjectDetectorApp:
             self.detector.stop()
 
     def on_source_select(self, event):
-        # Функція, яка викликається при виборі опції в Combobox
+        # A function that is called when an option is selected in a Combobox
         chosen_option = self.source_var.get()
         file_path = None
         if chosen_option == "Choose image":
@@ -157,7 +156,7 @@ class ObjectDetectorApp:
             self.camera_frame.place_forget()
             file_path = filedialog.askopenfilename(filetypes=[("Video files", "*.mp4 *.avi")])
         elif chosen_option == "Web camera":
-            self.camera_combobox.config(state='readonly')  # Активувати випадаючий список камер
+            self.camera_combobox.config(state='readonly')  # Activate the drop-down list of cameras
             print("Web camera selected")
             self.file_path_label.config(text="")
             self.camera_frame.place(x=320, y=510, width=220, height=80)
@@ -171,7 +170,7 @@ class ObjectDetectorApp:
             self.file_path_label.config(text="")
 
     def detect_cameras(self):
-        # Спроба підключитися до камер для визначення їх кількості
+        # Attempting to connect to cameras to determine their number
         index = 0
         arr = []
         while True:
@@ -185,14 +184,14 @@ class ObjectDetectorApp:
         return arr
 
     def on_camera_select(self):
-        # Функція для обробки вибору камери
+        # Function to handle camera selection
         selected_camera = self.camera_var.get()
         print("Selected camera:", selected_camera)
-        # Тут можна додати код для запуску вибраної камери
+
 
     def start_video_processing(self):
         if self.camera_var.get() != '':
-            capture_index = int(self.camera_var.get())  # Отримати індекс обраної камери
+            capture_index = int(self.camera_var.get())  # Get the index of the selected camera
             self.detector = ObjectDetection(capture_index, self.detection_conf)
             video_thread = threading.Thread(target=self.detector, args=(self.update_frame, self.get_alert))
             video_thread.daemon = True
@@ -207,15 +206,15 @@ class ObjectDetectorApp:
         frame = Image.fromarray(frame)
         frame = ImageTk.PhotoImage(frame)
         self.video_label.config(image=frame)
-        self.video_label.image = frame  # збереження посилання на зображення
+        self.video_label.image = frame  # saving the link to the image
     
     def send_image_tgbot(self, frame, message):
         if frame is not None:
-            # Перетворення Tkinter PhotoImage на PIL Image
+            # Convert Tkinter PhotoImage to PIL Image
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frame_image = Image.fromarray(frame)
             print("Send Image 2")
-            # Збереження PIL Image у буфер обміну
+            # Saving the PIL Image to the clipboard
             with io.BytesIO() as camera_image:
                 frame_image.save(camera_image, format="PNG")
                 camera_image.seek(0)
