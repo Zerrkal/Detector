@@ -6,7 +6,6 @@ import io
 import threading
 from PIL import Image, ImageTk
 from time import time
-import configparser
 
 from detector import ObjectDetection
 from alert_telegram import AlertNotificationTelegram
@@ -25,7 +24,7 @@ class ObjectDetectorApp:
 
         self.alert_tg_notif_bot = AlertNotificationTelegram(token)
 
-        print(self.detection_conf, self.alert_update_time, self.send_notif, token)
+        # print(self.detection_conf, self.alert_update_time, self.send_notif, token)
 
     
 
@@ -106,14 +105,14 @@ class ObjectDetectorApp:
     
     
     def start_detection(self):
-        print("Start")
+        # print("Start")
         self.detection_conf, self.alert_update_time, self.send_notif, _ = DetectionAppSetConfig().get_settings()
         self.video_label.config(image='')
         chosen_option = self.source_var.get()
         if chosen_option == "Choose image":
             self.camera_frame.place_forget()
             if self.selected_file_path and self.selected_file_path.endswith((".jpg", ".jpeg", ".png")):
-                print("ok")
+                # print("ok")
                 self.detector = ObjectDetection(None, self.detection_conf)
                 image = self.detector.process_image(self.selected_file_path, self.video_frame_width, self.video_frame_hight)
                 self.update_frame(image)
@@ -139,9 +138,9 @@ class ObjectDetectorApp:
             self.file_path_label.config(text="No source selected", fg="red")
 
     def stop_detection(self):
-        print("Stop")
+        # print("Stop")
         self.window.after(50, lambda: self.video_label.config(image=''))  # очищення віджету Label
-        # Код для зупинки детекції об'єктів
+        # Code to stop object detection
         if self.detector:
             self.detector.stop()
 
@@ -157,7 +156,7 @@ class ObjectDetectorApp:
             file_path = filedialog.askopenfilename(filetypes=[("Video files", "*.mp4 *.avi")])
         elif chosen_option == "Web camera":
             self.camera_combobox.config(state='readonly')  # Activate the drop-down list of cameras
-            print("Web camera selected")
+            # print("Web camera selected")
             self.file_path_label.config(text="")
             self.camera_frame.place(x=320, y=510, width=220, height=80)
 
@@ -186,7 +185,7 @@ class ObjectDetectorApp:
     def on_camera_select(self):
         # Function to handle camera selection
         selected_camera = self.camera_var.get()
-        print("Selected camera:", selected_camera)
+        # print("Selected camera:", selected_camera)
 
 
     def start_video_processing(self):
@@ -198,7 +197,7 @@ class ObjectDetectorApp:
             video_thread.start()
             
         else:
-            print("No camera selected")
+            # print("No camera selected")
             self.file_path_label.config(text="No camera selected", fg="red")
 
     def update_frame(self, frame):
@@ -213,7 +212,7 @@ class ObjectDetectorApp:
             # Convert Tkinter PhotoImage to PIL Image
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frame_image = Image.fromarray(frame)
-            print("Send Image 2")
+            # print("Send Image 2")
             # Saving the PIL Image to the clipboard
             with io.BytesIO() as camera_image:
                 frame_image.save(camera_image, format="PNG")
@@ -228,13 +227,13 @@ class ObjectDetectorApp:
             if current_time - self.alert_time >= self.alert_update_time:
                 self.alert_time = current_time
                 message = f"Alert {class_ids} drone found"
-                print(message)
+                # print(message)
                 self.send_image_tread = threading.Thread(target=self.send_image_tgbot, args = (frame, message))
                 self.send_image_tread.daemon = True
                 self.send_image_tread.start()
     
     def run(self):
-            """Запускає головний цикл Tkinter."""
+            # Starts the Tkinter main loop
             self.window.mainloop()
     
 

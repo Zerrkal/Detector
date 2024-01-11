@@ -1,7 +1,5 @@
 import torch
-import numpy as np
 import cv2
-from time import time
 from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator, colors
 
@@ -18,8 +16,6 @@ class ObjectDetection:
 
         # visual information
         self.annotator = None
-        self.start_time = 0
-        self.end_time = 0
 
         # device information
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -47,10 +43,9 @@ class ObjectDetection:
         cap = cv2.VideoCapture(self.capture_index)
         assert cap.isOpened()
         while self.running:
-            self.start_time = time()
             ret, im0 = cap.read()
             if not ret:
-                print("Can`t read frame from camera")
+                # print("Can`t read frame from camera")
                 break
             assert ret
             results = self.predict(im0)
@@ -59,7 +54,7 @@ class ObjectDetection:
             if len(class_ids) > 0:  # Only send msg If not sent before
                 if not self.notif_sent:
                     class_ids_callback(len(class_ids), im0)
-                    print("send_email")
+                    # print("send")
                     self.notif_sent = True
             else:
                 self.notif_sent = False
