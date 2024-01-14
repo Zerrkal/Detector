@@ -85,7 +85,7 @@ class ObjectDetection:
         cap.release()
     
     def resize_and_pad(self, im0, new_width=None, new_height=None):
-        """Змінює розмір зображення та додає рамку для збереження відношення сторін"""
+        """Resizes the image and adds a border to preserve the aspect ratio"""
         (h, w) = im0.shape[:2]
 
         #  Calculation of scaling factors

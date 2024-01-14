@@ -24,8 +24,6 @@ class ObjectDetectorApp:
 
         self.alert_tg_notif_bot = AlertNotificationTelegram(token)
 
-        # print(self.detection_conf, self.alert_update_time, self.send_notif, token)
-
     
 
 
@@ -42,25 +40,25 @@ class ObjectDetectorApp:
         self.video_frame_width = 640
         self.video_frame_hight = 448
 
-        # Місце для відео або фото
+        # Place for video or photo
         self.video_frame = tk.Frame(self.window, bg='black', bd=2, relief="sunken")
         self.video_frame.place(x=50, y=50, width=self.video_frame_width, height=self.video_frame_hight)
 
         self.video_label = tk.Label(self.video_frame, text="VIDEO", bg='gray', fg='white')
         self.video_label.pack(expand=True, fill='both')
 
-        # Створення випадаючого меню
+        # Creating a drop-down menu
         menu_bar = Menu(self.window)
         self.window.config(menu=menu_bar)
 
-        # Додавання першого меню налаштувань
+        # ДAdding the first settings menu
         settings_menu = Menu(menu_bar, tearoff=0)
         menu_bar.add_cascade(label="Detection Settings", menu=settings_menu)
         settings_menu.add_command(label="Telegram bot", command=DetectionAppSetConfig.tg_bot_settings_ui)
         settings_menu.add_command(label="Telegram chat id", command=DetectionAppSetConfig.tg_bot_id_settings_ui)
         settings_menu.add_command(label="Confidence lvl", command=DetectionAppSetConfig.confidence_settings_ui)
 
-        # Кнопки Start та Stop
+        # Start and Stop buttons
         buttons_frame = ttk.Frame(self.window)
         buttons_frame.place(x=20, y=505, width=160, height=80)
 
@@ -70,7 +68,6 @@ class ObjectDetectorApp:
         stop_button = ttk.Button(buttons_frame, text="Stop", command=self.stop_detection)
         stop_button.pack(side='top', pady=5)
 
-        # Напис "Source" та Combobox для вибору джерела
         source_frame = ttk.Frame(self.window)
         source_frame.place(x=160, y=510, width=400, height=80)
 
@@ -95,7 +92,6 @@ class ObjectDetectorApp:
         self.camera_var = tk.StringVar()
         self.camera_combobox = ttk.Combobox(self.camera_frame, textvariable=self.camera_var, 
                                             values=self.available_cameras, state='readonly', width=12)
-        # self.camera_combobox.grid(column=0, row=0)
         self.camera_combobox.place(x=100, y=0)
 
 
@@ -105,14 +101,12 @@ class ObjectDetectorApp:
     
     
     def start_detection(self):
-        # print("Start")
         self.detection_conf, self.alert_update_time, self.send_notif, _ = DetectionAppSetConfig().get_settings()
         self.video_label.config(image='')
         chosen_option = self.source_var.get()
         if chosen_option == "Choose image":
             self.camera_frame.place_forget()
             if self.selected_file_path and self.selected_file_path.endswith((".jpg", ".jpeg", ".png")):
-                # print("ok")
                 self.detector = ObjectDetection(None, self.detection_conf)
                 image = self.detector.process_image(self.selected_file_path, self.video_frame_width, self.video_frame_hight)
                 self.update_frame(image)
@@ -138,9 +132,7 @@ class ObjectDetectorApp:
             self.file_path_label.config(text="No source selected", fg="red")
 
     def stop_detection(self):
-        # print("Stop")
-        self.window.after(50, lambda: self.video_label.config(image=''))  # очищення віджету Label
-        # Code to stop object detection
+        self.window.after(50, lambda: self.video_label.config(image=''))  # clearing the Label widget
         if self.detector:
             self.detector.stop()
 
@@ -156,7 +148,6 @@ class ObjectDetectorApp:
             file_path = filedialog.askopenfilename(filetypes=[("Video files", "*.mp4 *.avi")])
         elif chosen_option == "Web camera":
             self.camera_combobox.config(state='readonly')  # Activate the drop-down list of cameras
-            # print("Web camera selected")
             self.file_path_label.config(text="")
             self.camera_frame.place(x=320, y=510, width=220, height=80)
 
@@ -185,7 +176,6 @@ class ObjectDetectorApp:
     def on_camera_select(self):
         # Function to handle camera selection
         selected_camera = self.camera_var.get()
-        # print("Selected camera:", selected_camera)
 
 
     def start_video_processing(self):
@@ -212,7 +202,6 @@ class ObjectDetectorApp:
             # Convert Tkinter PhotoImage to PIL Image
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frame_image = Image.fromarray(frame)
-            # print("Send Image 2")
             # Saving the PIL Image to the clipboard
             with io.BytesIO() as camera_image:
                 frame_image.save(camera_image, format="PNG")
