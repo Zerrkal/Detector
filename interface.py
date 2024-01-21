@@ -51,7 +51,7 @@ class ObjectDetectorApp:
         menu_bar = Menu(self.window)
         self.window.config(menu=menu_bar)
 
-        # ДAdding the first settings menu
+        # Adding the first settings menu
         settings_menu = Menu(menu_bar, tearoff=0)
         menu_bar.add_cascade(label="Detection Settings", menu=settings_menu)
         settings_menu.add_command(label="Telegram bot", command=DetectionAppSetConfig.tg_bot_settings_ui)
@@ -147,7 +147,7 @@ class ObjectDetectorApp:
             self.camera_frame.place_forget()
             file_path = filedialog.askopenfilename(filetypes=[("Video files", "*.mp4 *.avi")])
         elif chosen_option == "Web camera":
-            self.camera_combobox.config(state='readonly')  # Activate the drop-down list of cameras
+            self.camera_combobox.config(values=self.detect_cameras(), state='readonly')  # Activate the drop-down list of cameras
             self.file_path_label.config(text="")
             self.camera_frame.place(x=320, y=510, width=220, height=80)
 
@@ -176,11 +176,13 @@ class ObjectDetectorApp:
     def on_camera_select(self):
         # Function to handle camera selection
         selected_camera = self.camera_var.get()
+        return selected_camera
 
 
     def start_video_processing(self):
-        if self.camera_var.get() != '':
-            capture_index = int(self.camera_var.get())  # Get the index of the selected camera
+        selected_camera = self.on_camera_select()
+        if self.on_camera_select() != '':
+            capture_index = int(selected_camera)  # Get the index of the selected camera
             self.detector = ObjectDetection(capture_index, self.detection_conf)
             video_thread = threading.Thread(target=self.detector, args=(self.update_frame, self.get_alert))
             video_thread.daemon = True

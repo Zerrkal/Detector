@@ -74,6 +74,13 @@ class ObjectDetection:
     def process_video(self, video_path, frame_update_callback, width=640, height=640):
         cap = cv2.VideoCapture(video_path)
         assert cap.isOpened()
+
+        # Отримання FPS оригінального відео
+        fps = cap.get(cv2.CAP_PROP_FPS)
+
+        # Час очікування між кадрами в мілісекундах
+        wait_time = int(1000 / fps)
+
         while self.running:
             ret, im0 = cap.read()
             if not ret:
@@ -82,6 +89,8 @@ class ObjectDetection:
             im0, _ = self.plot_bboxes(results, im0)
             im0 = self.resize_and_pad(im0, width, height)
             frame_update_callback(im0)
+            # Очікування для імітації оригінального FPS
+            cv2.waitKey(wait_time)
         cap.release()
     
     def resize_and_pad(self, im0, new_width=None, new_height=None):
